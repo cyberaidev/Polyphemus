@@ -1,0 +1,29 @@
+{
+  "groups": {
+    "finance": {
+      "description": "Finance department members.",
+      "permitted_classifications": ["public", "internal", "finance_confidential"],
+      "permitted_departments": ["finance", "general"]
+    },
+    "hr": {
+      "description": "Human resources department members.",
+      "permitted_classifications": ["public", "internal", "hr_confidential"],
+      "permitted_departments": ["hr", "general"]
+    },
+    "admin": {
+      "description": "Administrators with cross-department access.",
+      "permitted_classifications": [
+        "public",
+        "internal",
+        "hr_confidential",
+        "finance_confidential"
+      ],
+      "permitted_departments": ["finance", "hr", "general", "it"]
+    },
+    "staff": {
+      "description": "General staff with access to internal, non-confidential content.",
+      "permitted_classifications": ["public", "internal"],
+      "permitted_departments": ["general"]
+    }
+  }
+}

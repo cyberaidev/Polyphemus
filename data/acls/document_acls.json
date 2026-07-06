@@ -1,0 +1,52 @@
+{
+  "documents": [
+    {
+      "doc_id": "finance-q3-earnings",
+      "relative_path": "finance/q3_earnings.md",
+      "department": "finance",
+      "classification": "finance_confidential",
+      "allowed_groups": ["finance", "admin"],
+      "owner": "cfo@corp.example"
+    },
+    {
+      "doc_id": "finance-vendor-payments",
+      "relative_path": "finance/vendor_payments.md",
+      "department": "finance",
+      "classification": "finance_confidential",
+      "allowed_groups": ["finance", "admin"],
+      "owner": "ap-lead@corp.example"
+    },
+    {
+      "doc_id": "hr-pto-policy",
+      "relative_path": "hr/pto_policy.md",
+      "department": "hr",
+      "classification": "hr_confidential",
+      "allowed_groups": ["hr", "admin"],
+      "owner": "hr-lead@corp.example"
+    },
+    {
+      "doc_id": "hr-employee-handbook",
+      "relative_path": "hr/employee_handbook.md",
+      "department": "hr",
+      "classification": "hr_confidential",
+      "allowed_groups": ["hr", "admin"],
+      "owner": "hr-lead@corp.example"
+    },
+    {
+      "doc_id": "general-company-overview",
+      "relative_path": "general/company_overview.md",
+      "department": "general",
+      "classification": "internal",
+      "allowed_groups": ["finance", "hr", "admin", "staff"],
+      "owner": "comms@corp.example"
+    },
+    {
+      "doc_id": "finance-vendor-invoice-injection",
+      "relative_path": "malicious/vendor_invoice_injection.md",
+      "department": "finance",
+      "classification": "finance_confidential",
+      "allowed_groups": ["finance", "admin"],
+      "owner": "ap-lead@corp.example"
+    }
+  ]
+}

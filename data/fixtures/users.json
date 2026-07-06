@@ -1,0 +1,54 @@
+{
+  "users": {
+    "finance_user": {
+      "claims": {
+        "sub": "user-finance-001",
+        "cognito:username": "fiona.finance",
+        "cognito:groups": ["finance"],
+        "custom:department": "finance",
+        "custom:clearance": "finance_confidential",
+        "idp": "cognito"
+      }
+    },
+    "hr_user": {
+      "claims": {
+        "sub": "user-hr-002",
+        "cognito:username": "harry.hr",
+        "cognito:groups": ["hr"],
+        "custom:department": "hr",
+        "custom:clearance": "hr_confidential",
+        "idp": "cognito"
+      }
+    },
+    "admin": {
+      "claims": {
+        "sub": "user-admin-003",
+        "cognito:username": "ada.admin",
+        "cognito:groups": ["admin"],
+        "custom:department": "it",
+        "custom:clearance": "finance_confidential",
+        "idp": "cognito"
+      }
+    },
+    "attacker": {
+      "claims": {
+        "sub": "user-attacker-004",
+        "cognito:username": "mallory.finance",
+        "cognito:groups": ["finance"],
+        "custom:department": "finance",
+        "custom:clearance": "finance_confidential",
+        "idp": "cognito"
+      }
+    },
+    "staff_user": {
+      "claims": {
+        "sub": "user-staff-005",
+        "cognito:username": "sam.staff",
+        "cognito:groups": ["staff"],
+        "custom:department": "general",
+        "custom:clearance": "internal",
+        "idp": "cognito"
+      }
+    }
+  }
+}

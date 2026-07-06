@@ -1,0 +1,14 @@
+{
+  "app": "python3 app.py",
+  "watch": {
+    "include": ["**"],
+    "exclude": ["README.md", "cdk*.json", "requirements*.txt", ".venv", "cdk.out"]
+  },
+  "context": {
+    "@aws-cdk/core:checkSecretUsage": true,
+    "@aws-cdk/aws-iam:minimizePolicies": true,
+    "name_prefix": "polyphemus",
+    "bedrock_text_model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+    "bedrock_embed_model_id": "amazon.titan-embed-text-v2:0"
+  }
+}

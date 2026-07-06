@@ -1,0 +1,15 @@
+# Polyphemus runtime dependencies
+#
+# These are the ONLY packages required to run the reference pipeline in mock mode
+# (offline, no AWS credentials). boto3/botocore are declared because the `aws`
+# mode wires real clients through aws/clients.py, but they are never imported by
+# pipeline logic and are not exercised by the offline demo or test suite.
+boto3>=1.34,<2
+botocore>=1.34,<2
+pydantic>=2.5,<3
+pydantic-settings>=2.1,<3
+python-dotenv>=1.0,<2
+
+# --- Optional / enhanced (uncomment to enable, not needed for the offline demo) ---
+# presidio-analyzer>=2.2      # NER-grade PII detection as an alternative to the regex detectors
+# opensearch-py>=2.4          # Real OpenSearch Serverless client wrapper for `aws` mode

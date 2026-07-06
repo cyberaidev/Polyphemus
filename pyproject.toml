@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bedrock-secure-rag-reference"
+version = "0.1.0"
+description = "Polyphemus — a secure Amazon Bedrock RAG reference with enforced access control, PII redaction, prompt-injection defense, and an audit trail."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Polyphemus Reference Authors" }]
+keywords = ["bedrock", "rag", "security", "access-control", "prompt-injection", "pii", "audit"]
+dependencies = [
+    "boto3>=1.34,<2",
+    "botocore>=1.34,<2",
+    "pydantic>=2.5,<3",
+    "pydantic-settings>=2.1,<3",
+    "python-dotenv>=1.0,<2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0,<9",
+    "pytest-cov>=4.1,<6",
+    "ruff>=0.4,<1",
+    "black>=24.0,<25",
+    "mypy>=1.9,<2",
+    "moto>=5.0,<6",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+polyphemus = ["py.typed"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "scripts", "tests", "api"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "W"]
+ignore = [
+    "E501",  # line length handled by black
+    "B008",  # function calls in argument defaults (used intentionally for Settings)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["polyphemus"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_unused_ignores = true
+warn_redundant_casts = true
+ignore_missing_imports = true
+plugins = ["pydantic.mypy"]
+mypy_path = "src"
+explicit_package_bases = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["src"]
+filterwarnings = ["ignore::DeprecationWarning"]
