@@ -24,7 +24,9 @@ htmlcov/
 coverage.xml
 
 # --- Runtime audit output (never commit real audit logs) ---
-audit/
+# Only the repo-root runtime audit directory — NOT source dirs named "audit"
+# (e.g. src/polyphemus/audit/ or iac/terraform/modules/audit/).
+/audit/
 *.log
 
 # --- Terraform ---
