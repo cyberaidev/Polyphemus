@@ -124,7 +124,7 @@ jobs:
             --context bedrock_embed_model_id=amazon.titan-embed-text-v2:0
 
       - name: Checkov scan of Terraform (pinned)
-        uses: bridgecrewio/checkov-action@v12.2988.0
+        uses: bridgecrewio/checkov-action@v12.3112.0
         with:
           directory: iac/terraform
           framework: terraform
