@@ -30,7 +30,7 @@ from __future__ import annotations
 import math
 from typing import Any
 
-from polyphemus.models import CLASSIFICATION_RANK, Chunk
+from polyphemus.models import CLASSIFICATION_RANK, UNKNOWN_CLASSIFICATION_RANK, Chunk
 
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:
@@ -99,7 +99,10 @@ class MockVectorStore:
 def _chunk_field(chunk: Chunk, field: str) -> Any:
     """Resolve a filter field name against a chunk (incl. synthetic fields)."""
     if field == "classification_rank":
-        return CLASSIFICATION_RANK.get(chunk.classification, 0)
+        # Fail closed: an unknown classification is ranked above every real tier
+        # so a `range { lte: user_rank }` filter can never admit it. (Using 0 here
+        # would fail OPEN and leak corrupt chunks to any user.)
+        return CLASSIFICATION_RANK.get(chunk.classification, UNKNOWN_CLASSIFICATION_RANK)
     return getattr(chunk, field, None)
 
 

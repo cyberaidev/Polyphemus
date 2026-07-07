@@ -52,6 +52,19 @@ def test_luhn_rejects_invalid_card():
     assert "CREDIT_CARD" not in types
 
 
+def test_credit_card_overlap_precedence_labels_exactly_credit_card():
+    """A Luhn-valid 16-digit card is labeled exactly CREDIT_CARD — the greedy
+    phone/SSN matchers must not also claim (part of) the same span (overlap
+    precedence is resolved so no double-labeling occurs)."""
+    spans = [s for s in detect_all("card 4111 1111 1111 1111 on file")]
+    covering = [s for s in spans if "4111" in s.text]
+    assert covering, "expected the card digits to be detected"
+    labels = {s.entity_type for s in covering}
+    assert labels == {"CREDIT_CARD"}
+    assert "PHONE" not in labels
+    assert "US_SSN" not in labels
+
+
 def test_no_false_positive_on_clean_text():
     redacted, events = Redactor().redact("The quarterly report looks great.", "prompt")
     assert events == []

@@ -14,7 +14,7 @@
 | `modules/opensearch_serverless` | Vector store (**primary**) | encryption/network/data-access policies; ACL metadata filtering at query time (C2) |
 | `modules/cognito` | Identity provider | user pool + groups (`finance`/`hr`/`admin`), app client (C1); Entra federation notes below |
 | `modules/bedrock` | Bedrock | Guardrail + Knowledge Base references, IAM scoped to specific model ARNs (C5, C8) |
-| `modules/lambda_api` | API Gateway + Lambda | HTTP API with **JWT authorizer**, function role (C1, C8) |
+| `modules/lambda_api` | API Gateway + Lambda | HTTP API with **JWT authorizer**, function role (C1, C8), **stage-level throttling** (C9) |
 | `modules/audit` | Audit trail | CloudWatch log group + S3 audit bucket (object-lock note) (C6) |
 
 ## Usage (reference)

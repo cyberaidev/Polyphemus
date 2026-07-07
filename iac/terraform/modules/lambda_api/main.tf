@@ -118,6 +118,14 @@ resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.http.id
   name        = "$default"
   auto_deploy = true
+
+  # Rate limiting / abuse control (C9). Stage-level throttling caps the sustained
+  # request rate and burst so a single caller cannot exhaust the pipeline (which
+  # invokes paid Bedrock models). Tune per environment.
+  default_route_settings {
+    throttling_rate_limit  = var.throttling_rate_limit
+    throttling_burst_limit = var.throttling_burst_limit
+  }
 }
 
 resource "aws_lambda_permission" "apigw" {

@@ -60,14 +60,22 @@ def audit_logger():
 
 
 @pytest.fixture()
-def pipeline(seeded_store):
-    """A pipeline over a freshly seeded store, defenses ON."""
+def pipeline(seeded_store, monkeypatch):
+    """A pipeline over a freshly seeded store, defenses ON.
+
+    Mirrors the demo runner: the demonstration-only denied-evidence pass is
+    enabled so scenario tests can assert on `denied_sources`.
+    """
+    monkeypatch.setenv("POLYPHEMUS_EMIT_DENIED_EVIDENCE", "true")
+    reset_settings_cache()
     return SecureRAGPipeline()
 
 
 @pytest.fixture()
-def pipeline_unsafe(seeded_store):
+def pipeline_unsafe(seeded_store, monkeypatch):
     """A pipeline with injection defenses DISABLED (for contrast tests)."""
+    monkeypatch.setenv("POLYPHEMUS_EMIT_DENIED_EVIDENCE", "true")
+    reset_settings_cache()
     return SecureRAGPipeline(defenses_enabled=False)
 
 

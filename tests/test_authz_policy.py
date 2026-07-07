@@ -79,3 +79,22 @@ def test_fail_closed_on_empty_groups():
     decision = policy.evaluate(user, empty)
     assert not decision.allowed
     assert decision.matched_rule == "deny_no_group"
+
+
+def test_unknown_classification_fails_closed_in_policy():
+    """A chunk with a classification outside the known set is DENIED by the policy
+    engine even when the group intersection succeeds (shared fail-closed rank)."""
+    user = from_fixture("finance_user")
+    # model_construct bypasses the Literal validation to simulate corrupt data.
+    corrupt = Chunk.model_construct(
+        chunk_id="c#0",
+        doc_id="d",
+        text="x",
+        department="finance",
+        classification="top_secret",  # not in Classification
+        allowed_groups=["finance"],  # group WOULD match — clearance must still deny
+        source_uri="file://finance/corrupt.md",
+    )
+    decision = policy.evaluate(user, corrupt)
+    assert not decision.allowed
+    assert decision.matched_rule == "clearance_lt"

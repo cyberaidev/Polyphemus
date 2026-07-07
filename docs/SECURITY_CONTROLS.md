@@ -17,6 +17,7 @@ and NIST publications.
 | C6 | Structured audit trail | `audit/logger.py`, `models.AuditRecord` | non-repudiation, incident response | (cross-cutting) | AU-2, AU-3, AU-12 |
 | C7 | Encryption at rest / in transit | IaC: `s3_documents`, `audit` modules | data-at-rest/in-transit exposure | LLM06 | SC-13, SC-28 |
 | C8 | Least-privilege IAM | IaC: `bedrock`, `lambda_api` modules | excessive agency, blast radius | LLM08 Excessive Agency | AC-6 (least privilege) |
+| C9 | Rate limiting / abuse control | IaC: `lambda_api` (TF `default_route_settings`), `api_stack` (CDK stage throttle) | request flooding, cost/DoS exhaustion of the paid model backend | LLM04 Model Denial of Service (adjacent) | SC-5 (denial-of-service protection) |
 
 ## OWASP LLM Top 10 coverage summary
 
@@ -44,8 +45,18 @@ and NIST publications.
 - **Managed alternative:** Amazon Bedrock Guardrails PII filters can enforce the
   same masking at the model boundary; documented here as a drop-in for C4/C5.
 - **Where applied:** retrieved **context** and the **user prompt**, *before*
-  Bedrock invocation. Replacements use typed placeholders (`[REDACTED_SSN]`), and
-  each is recorded as a `RedactionEvent` in the audit trail.
+  Bedrock invocation, **and the model response**, *after* invocation (output-side
+  validation — see below). Replacements use typed placeholders
+  (`[REDACTED_US_SSN]`), and each is recorded as a `RedactionEvent` in the audit
+  trail (`location` is `context`, `prompt`, or `response`).
+- **Output-side validation (LLM02):** after generation, `SecureRAGPipeline`
+  re-runs the redactor over the response and checks for the system-prompt canary
+  marker. Any PII that surfaced in the answer is scrubbed; if the canary leaked it
+  is replaced with `[REDACTED_SYSTEM_PROMPT]` and an `output_marker_leak`
+  injection flag is recorded. In mock mode with defenses on this never fires — it
+  is a fail-safe, not the primary control. (The canary scrub is intentionally
+  skipped when defenses are disabled so the demonstration contrast can show the
+  raw leak.)
 
 ## Prompt-injection defense detail (C5)
 

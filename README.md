@@ -1,5 +1,9 @@
 # Polyphemus — `bedrock-secure-rag-reference`
 
+[![CI](https://github.com/cyberaidev/bedrock-secure-rag-reference/actions/workflows/ci.yml/badge.svg)](https://github.com/cyberaidev/bedrock-secure-rag-reference/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+
 A secure Amazon Bedrock RAG reference with **enforced query-time access control,
 PII redaction, indirect-prompt-injection defense, and a complete audit trail** —
 runnable end-to-end **offline** with zero AWS credentials.
@@ -117,8 +121,13 @@ Access-control model (RBAC + ABAC, fail-closed): [`docs/ACCESS_CONTROL.md`](docs
 ```
 identity -> retrieve(authz filter + post-filter re-check) -> injection scan
          -> neutralize + spotlight -> PII redaction (context + prompt)
-         -> hardened system prompt -> Bedrock -> audit
+         -> hardened system prompt -> Bedrock -> output validation -> audit
 ```
+
+Injection scanning/neutralization runs **before** PII redaction (defang the
+untrusted context first, then scrub it). After generation, an output-side
+validator re-runs redaction on the answer and scrubs the system-prompt canary if
+it ever leaked.
 
 Each request yields one `AuditRecord`. Access control is enforced in **two
 independent layers**: a query-time metadata filter (unauthorized chunks are never
@@ -150,6 +159,33 @@ and logged to `denied_sources`).
   repo is a **reference**, not a deployable service.
 
 Pipeline modules import from the client seam only, never `boto3` directly.
+
+---
+
+## Limitations of mock mode
+
+Mock mode makes the whole system runnable offline and deterministic, which is
+ideal for demos, tests, and CI. But it is a **simulation**, and one limitation is
+important to state plainly:
+
+- **The mock model's prompt-injection resistance is simulated, not real.** In
+  mock mode, `MockBedrock` decides whether to "obey" an embedded instruction with
+  a deterministic `if`-statement keyed off the defense sentinel written into the
+  system prompt (`POLYPHEMUS_DEFENSES: on|off`). So Scenario 3 demonstrates the
+  *pipeline wiring* — that with defenses on the system-prompt canary never leaks,
+  HR records are not dumped, and the exfiltration target never appears — but it
+  does **not** prove that a real LLM would resist the attack. Genuine resistance
+  in production depends on prompt hardening **plus Amazon Bedrock Guardrails**
+  (`PROMPT_ATTACK` filter), which are exercised only in `aws` mode.
+- The heuristic scanner, spotlighting/neutralization, PII detectors, and the
+  output validator **are** real code and run identically in both modes — those
+  controls are genuinely exercised offline. It is specifically the *model's
+  refusal to follow injected instructions* that is stubbed in the mock.
+- Other mocks (S3, the vector store, embeddings) are faithful in behavior but
+  in-memory: no encryption-at-rest, IAM, or network controls apply offline — those
+  live in the IaC references and only take effect in a real deployment.
+
+See [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) for the full residual-risk list.
 
 ---
 
@@ -213,6 +249,17 @@ Pure Python, no network or binary dependencies — CI verifies the committed SVG
 reproducible.
 
 ---
+
+## Contributing & security
+
+- **Contributing:** [`CONTRIBUTING.md`](CONTRIBUTING.md) — offline-first workflow
+  and the lint/typecheck/test/demo gate every PR must pass. Optional
+  [`.pre-commit-config.yaml`](.pre-commit-config.yaml) mirrors the Makefile.
+- **Security policy:** [`SECURITY.md`](SECURITY.md) — private disclosure process.
+- **Threat model:** [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) — assets,
+  adversaries, scope, and residual risks.
+- **Maintainers:** [`CONTRIBUTORS.md`](CONTRIBUTORS.md) /
+  [`.github/CODEOWNERS`](.github/CODEOWNERS).
 
 ## License
 

@@ -9,17 +9,18 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import cast
+from typing import Any, cast, get_args
 
 from polyphemus.models import Classification, UserContext
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _USERS_FIXTURE = _REPO_ROOT / "data" / "fixtures" / "users.json"
 
-_VALID_CLEARANCE = {"public", "internal", "hr_confidential", "finance_confidential"}
+# Derived from the Classification Literal so it can never drift from the model.
+_VALID_CLEARANCE: frozenset[str] = frozenset(get_args(Classification))
 
 
-def from_claims(claims: dict) -> UserContext:
+def from_claims(claims: dict[str, Any]) -> UserContext:
     """Build a UserContext from Cognito- or Entra-shaped claims (fail-closed)."""
     subject = claims.get("sub") or claims.get("oid") or "unknown"
 

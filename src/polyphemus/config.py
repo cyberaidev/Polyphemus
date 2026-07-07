@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     bedrock_text_model_id: str = "anthropic.claude-3-5-sonnet-20240620-v1:0"
     bedrock_embed_model_id: str = "amazon.titan-embed-text-v2:0"
 
+    # Max tokens the text model may generate (aws mode). Promoted from a hardcoded
+    # value so it is configurable via POLYPHEMUS_MAX_OUTPUT_TOKENS.
+    max_output_tokens: int = 1024
+
     # --- Vector store ---
     vector_backend: VectorBackend = "opensearch"
     index_name: str = "polyphemus-chunks"
@@ -45,6 +49,13 @@ class Settings(BaseSettings):
     # --- Retrieval tuning ---
     top_k: int = 5
     similarity_floor: float = 0.05
+
+    # Demonstration-only: when True, retrieval runs a SECOND, unfiltered corpus-wide
+    # query to populate `denied_sources` with the relevant documents the user was
+    # NOT allowed to see. This is expensive and reveals the existence of otherwise
+    # invisible documents, so it is OFF by default (the API path). The demo and the
+    # deny-evidence scenario tests turn it on to prove the access-control deny.
+    emit_denied_evidence: bool = False
 
     # --- Chunking ---
     chunk_size: int = 600

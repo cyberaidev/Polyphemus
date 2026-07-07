@@ -58,6 +58,16 @@ def test_redactions_captured_in_audit(pipeline, users):
     assert "US_SSN" in kinds  # vendor_payments.md contains an SSN
 
 
+def test_audit_record_carries_token_counts(pipeline, users):
+    rec = pipeline.answer(users["finance_user"], "vendor payments this quarter")
+    assert rec.input_tokens >= 0
+    assert rec.output_tokens >= 0
+    # A real request has a non-empty prompt+context and a non-empty answer, so the
+    # approximate counts should be strictly positive in the mock.
+    assert rec.input_tokens > 0
+    assert rec.output_tokens > 0
+
+
 def test_original_prompt_preserved_but_redacted_field_scrubbed(pipeline, users):
     rec = pipeline.answer(users["finance_user"], "my ssn is 123-45-6789 what are payments?")
     assert "123-45-6789" in rec.prompt  # original retained as access-controlled evidence

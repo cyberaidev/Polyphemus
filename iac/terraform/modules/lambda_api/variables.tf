@@ -43,3 +43,15 @@ variable "lambda_package_path" {
   type        = string
   default     = "build/pipeline.zip"
 }
+
+variable "throttling_rate_limit" {
+  description = "Stage-level steady-state request rate limit (requests/second)."
+  type        = number
+  default     = 20
+}
+
+variable "throttling_burst_limit" {
+  description = "Stage-level burst request limit (concurrent request spike)."
+  type        = number
+  default     = 40
+}

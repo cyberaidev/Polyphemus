@@ -10,8 +10,12 @@
    ``source_uri`` recorded in ``denied_sources``. This proves enforcement is not
    solely dependent on the index configuration.
 
-The retriever additionally reports the sources it *would* have surfaced without
-the filter, so the audit trail can show exactly which documents were withheld.
+Optionally (``collect_denied_evidence`` / ``Settings.emit_denied_evidence``) the
+retriever runs a SECOND, unfiltered corpus-wide query to also record the relevant
+sources the user was *not* authorized to see. This is **demonstration-only**: it
+is expensive and it reveals the existence of documents the user cannot access, so
+it is OFF by default (the API/production path). The demo and the deny-evidence
+scenario tests enable it to prove the access-control deny.
 """
 
 from __future__ import annotations
@@ -42,10 +46,23 @@ class RetrievalOutcome:
         return seen
 
 
-def retrieve(user: UserContext, query: str) -> RetrievalOutcome:
-    """Retrieve chunks for ``query`` that ``user`` is authorized to read."""
+def retrieve(
+    user: UserContext, query: str, collect_denied_evidence: bool | None = None
+) -> RetrievalOutcome:
+    """Retrieve chunks for ``query`` that ``user`` is authorized to read.
+
+    Args:
+        user: the authenticated caller.
+        query: the natural-language query.
+        collect_denied_evidence: when True, additionally run an unfiltered
+            corpus-wide query to record the relevant sources the user was denied
+            (demonstration-only). When None (default), the value falls back to
+            :attr:`Settings.emit_denied_evidence` (which is False by default).
+    """
     settings = get_settings()
     store = get_vector_store(settings)
+    if collect_denied_evidence is None:
+        collect_denied_evidence = settings.emit_denied_evidence
 
     query_vec = embed_query(query)
     metadata_filter = build_filter(user)
@@ -68,20 +85,23 @@ def retrieve(user: UserContext, query: str) -> RetrievalOutcome:
             if chunk.source_uri not in outcome.denied_sources:
                 outcome.denied_sources.append(chunk.source_uri)
 
-    # Evidence: which relevant sources were withheld purely by the ACL filter.
-    # We rank the whole corpus without the filter and record any relevant source
-    # the user was NOT authorized to see, so scenario 2 can prove the deny.
-    unfiltered_hits = store.query(
-        query_vec,
-        k=settings.top_k,
-        metadata_filter=None,
-        similarity_floor=settings.similarity_floor,
-    )
-    authorized_uris = set(outcome.authorized_sources)
-    for chunk, _score in unfiltered_hits:
-        decision = policy.evaluate(user, chunk)
-        if not decision.allowed and chunk.source_uri not in authorized_uris:
-            if chunk.source_uri not in outcome.denied_sources:
-                outcome.denied_sources.append(chunk.source_uri)
+    # Optional demonstration-only evidence pass: rank the whole corpus WITHOUT the
+    # filter and record any relevant source the user was NOT authorized to see, so
+    # scenario 2 can prove the deny. OFF by default — it is expensive and reveals
+    # the existence of documents the user cannot access. Never enabled on the API
+    # (production) path.
+    if collect_denied_evidence:
+        unfiltered_hits = store.query(
+            query_vec,
+            k=settings.top_k,
+            metadata_filter=None,
+            similarity_floor=settings.similarity_floor,
+        )
+        authorized_uris = set(outcome.authorized_sources)
+        for chunk, _score in unfiltered_hits:
+            decision = policy.evaluate(user, chunk)
+            if not decision.allowed and chunk.source_uri not in authorized_uris:
+                if chunk.source_uri not in outcome.denied_sources:
+                    outcome.denied_sources.append(chunk.source_uri)
 
     return outcome

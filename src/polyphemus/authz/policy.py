@@ -19,7 +19,13 @@ and the post-retrieval re-check calls :func:`evaluate` directly.
 
 from __future__ import annotations
 
-from polyphemus.models import CLASSIFICATION_RANK, Chunk, PolicyDecision, UserContext
+from polyphemus.models import (
+    CLASSIFICATION_RANK,
+    UNKNOWN_CLASSIFICATION_RANK,
+    Chunk,
+    PolicyDecision,
+    UserContext,
+)
 
 
 def evaluate(user: UserContext, chunk: Chunk) -> PolicyDecision:
@@ -40,8 +46,10 @@ def evaluate(user: UserContext, chunk: Chunk) -> PolicyDecision:
             source_uri=chunk.source_uri,
         )
 
-    # Rule 2: ABAC clearance rank for the scalar tiers.
-    chunk_rank = CLASSIFICATION_RANK.get(chunk.classification, 99)
+    # Rule 2: ABAC clearance rank for the scalar tiers. An unknown chunk
+    # classification fails CLOSED (ranked above every real tier); an unknown user
+    # clearance defaults to the lowest rank, so it can never over-grant.
+    chunk_rank = CLASSIFICATION_RANK.get(chunk.classification, UNKNOWN_CLASSIFICATION_RANK)
     user_rank = CLASSIFICATION_RANK.get(user.clearance, 0)
     if chunk_rank > user_rank:
         return PolicyDecision(

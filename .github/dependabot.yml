@@ -1,0 +1,57 @@
+# Dependabot configuration for Polyphemus.
+# Keeps Python, Terraform, and GitHub Actions dependencies patched. Ecosystems
+# map to the directories that carry their own manifests.
+
+version: 2
+updates:
+  # Root Python runtime + dev dependencies (requirements*.txt, pyproject.toml).
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+
+  # Lambda handler package dependencies.
+  - package-ecosystem: "pip"
+    directory: "/api"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+
+  # CDK (reference IaC) Python dependencies.
+  - package-ecosystem: "pip"
+    directory: "/iac/cdk"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+      - "iac"
+
+  # Terraform (primary IaC) providers/modules.
+  - package-ecosystem: "terraform"
+    directory: "/iac/terraform"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "terraform"
+      - "iac"
+
+  # GitHub Actions used by CI.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"

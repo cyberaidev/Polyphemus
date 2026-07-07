@@ -37,11 +37,11 @@
 <line x1="710" y1="295" x2="710" y2="309" stroke="#334155" stroke-width="1.6" marker-end="url(#arrow)"/>
 
 <rect x="580" y="357" width="260" height="34" rx="6" ry="6" fill="#dcfce7" stroke="#334155" stroke-width="1.5"/>
-<text x="710.0" y="378.0" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#0f172a">5. PII redaction (ctx + prompt)</text>
+<text x="710.0" y="378.0" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#0f172a">5. injection scan + neutralize</text>
 <line x1="710" y1="343" x2="710" y2="357" stroke="#334155" stroke-width="1.6" marker-end="url(#arrow)"/>
 
 <rect x="580" y="405" width="260" height="34" rx="6" ry="6" fill="#dcfce7" stroke="#334155" stroke-width="1.5"/>
-<text x="710.0" y="426.0" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#0f172a">6. injection scan + neutralize</text>
+<text x="710.0" y="426.0" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#0f172a">6. PII redaction (ctx + prompt)</text>
 <line x1="710" y1="391" x2="710" y2="405" stroke="#334155" stroke-width="1.6" marker-end="url(#arrow)"/>
 
 <rect x="580" y="453" width="260" height="34" rx="6" ry="6" fill="#dcfce7" stroke="#334155" stroke-width="1.5"/>

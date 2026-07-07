@@ -1,0 +1,39 @@
+# Pre-commit hooks for Polyphemus.
+#
+# These mirror the Makefile lint/typecheck gates so what runs locally matches CI.
+# All hooks are `repo: local`: they invoke the tools already installed in your
+# environment (see requirements-dev.txt) rather than fetching hook repos, so the
+# hooks run FULLY OFFLINE with no network access — consistent with the rest of the
+# project. Install once with `pre-commit install`; run against everything with
+# `pre-commit run --all-files`.
+#
+# Note: `repo: local` intentionally does NOT pin hook versions here — the versions
+# are pinned in requirements-dev.txt (ruff/black/mypy), keeping a single source of
+# truth. Dependabot updates those pins.
+
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff (lint)
+        entry: ruff check
+        language: system
+        types: [python]
+        args: ["src", "scripts", "tests", "api"]
+        pass_filenames: false
+
+      - id: black
+        name: black (format check)
+        entry: black --check
+        language: system
+        types: [python]
+        args: ["src", "scripts", "tests", "api"]
+        pass_filenames: false
+
+      - id: mypy
+        name: mypy (type check)
+        entry: mypy
+        language: system
+        types: [python]
+        args: ["src"]
+        pass_filenames: false

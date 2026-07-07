@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 # Ascending sensitivity. The two "*_confidential" tiers are siblings: they are
 # gated by group membership / department rather than by a single scalar rank.
@@ -29,6 +29,13 @@ CLASSIFICATION_RANK: dict[str, int] = {
     "hr_confidential": 2,
     "finance_confidential": 2,
 }
+
+# Fail-closed rank for any classification not in CLASSIFICATION_RANK. It is higher
+# than every real tier, so an unknown/corrupt classification is treated as MORE
+# sensitive than anything a user can be cleared for — the vector-store filter and
+# the policy engine both reject it rather than leaking it. Shared by both so the
+# two enforcement layers cannot disagree.
+UNKNOWN_CLASSIFICATION_RANK: int = 99
 
 CONFIDENTIAL_TIERS: frozenset[str] = frozenset({"hr_confidential", "finance_confidential"})
 
@@ -77,7 +84,7 @@ class PolicyDecision(BaseModel):
 
     allowed: bool
     reason: str  # human-readable rationale
-    matched_rule: str  # "group_intersection" | "clearance_gte" | "deny_no_group" | ...
+    matched_rule: str  # "group_intersection" | "clearance_lt" | "deny_no_group" | ...
     source_uri: str | None = None  # which resource this decision was about
 
 
@@ -98,7 +105,13 @@ class RedactionEvent(BaseModel):
 
 
 class AuditRecord(BaseModel):
-    """The immutable evidence trail for a single request."""
+    """The immutable evidence trail for a single request.
+
+    ``frozen=True`` enforces the "immutable evidence" property at runtime: once the
+    pipeline builds a record and writes it, it cannot be mutated in place.
+    """
+
+    model_config = ConfigDict(frozen=True)
 
     request_id: str
     timestamp: str  # ISO-8601 UTC
@@ -114,6 +127,8 @@ class AuditRecord(BaseModel):
     model_id: str = ""
     response: str = ""
     latency_ms: int = 0
+    input_tokens: int = 0  # prompt/context tokens (approximate in mock mode)
+    output_tokens: int = 0  # response tokens (approximate in mock mode)
 
     def to_jsonl(self) -> str:
         """Serialize to a single JSON line for the audit log."""

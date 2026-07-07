@@ -23,6 +23,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 os.environ.setdefault("POLYPHEMUS_MODE", "mock")
+# The demo turns ON the demonstration-only denied-evidence pass so scenarios 2 and
+# 4 can show exactly which documents the ACL withheld. Production/API leaves it off.
+os.environ.setdefault("POLYPHEMUS_EMIT_DENIED_EVIDENCE", "true")
 
 from polyphemus.audit.logger import AuditLogger  # noqa: E402
 from polyphemus.authz.identity import from_fixture  # noqa: E402
@@ -79,9 +82,13 @@ def scenario_1(pipeline: SecureRAGPipeline) -> AuditRecord:
     print(SUB)
     finance_seen = any("finance/" in u for u in record.retrieved_sources)
     pii_types = {e.entity_type for e in record.redactions}
+    expected_pii = {"US_SSN", "EMAIL", "PHONE", "IBAN", "CREDIT_CARD"}
     check("finance documents were retrieved", finance_seen)
     check("PII redacted (SSN present)", "US_SSN" in pii_types)
-    check("PII redacted (>=3 entity types)", len(pii_types) >= 3)
+    check(
+        "PII redacted (US_SSN, EMAIL, PHONE, IBAN, CREDIT_CARD)",
+        expected_pii <= pii_types,
+    )
     check("no HR documents retrieved", not any("hr/" in u for u in record.retrieved_sources))
     return record
 

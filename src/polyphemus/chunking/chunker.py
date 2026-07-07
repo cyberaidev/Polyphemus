@@ -12,8 +12,17 @@ from __future__ import annotations
 from polyphemus.acl.metadata import build_chunk_metadata
 from polyphemus.models import Chunk, Document
 
+# Defaults mirror Settings.chunk_size / Settings.chunk_overlap (see config.py). The
+# seeding path passes the resolved settings values explicitly; these constants are
+# the fallback for direct callers and tests, so the 600/80 magic numbers live in
+# exactly one place per layer.
+DEFAULT_CHUNK_SIZE = 600
+DEFAULT_CHUNK_OVERLAP = 80
 
-def chunk_document(doc: Document, size: int = 600, overlap: int = 80) -> list[Chunk]:
+
+def chunk_document(
+    doc: Document, size: int = DEFAULT_CHUNK_SIZE, overlap: int = DEFAULT_CHUNK_OVERLAP
+) -> list[Chunk]:
     """Split a document into overlapping character windows.
 
     Args:
@@ -64,7 +73,9 @@ def chunk_document(doc: Document, size: int = 600, overlap: int = 80) -> list[Ch
     return chunks
 
 
-def chunk_documents(docs: list[Document], size: int = 600, overlap: int = 80) -> list[Chunk]:
+def chunk_documents(
+    docs: list[Document], size: int = DEFAULT_CHUNK_SIZE, overlap: int = DEFAULT_CHUNK_OVERLAP
+) -> list[Chunk]:
     """Chunk a list of documents into a single flat list of chunks."""
     out: list[Chunk] = []
     for doc in docs:

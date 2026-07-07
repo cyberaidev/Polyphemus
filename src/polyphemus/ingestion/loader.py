@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 from polyphemus.models import Classification, Document
 
@@ -19,9 +20,10 @@ _DOCS_DIR = _DATA_DIR / "documents"
 _ACL_FILE = _DATA_DIR / "acls" / "document_acls.json"
 
 
-def _read_acls() -> list[dict]:
+def _read_acls() -> list[dict[str, Any]]:
     with _ACL_FILE.open("r", encoding="utf-8") as fh:
-        return json.load(fh)["documents"]
+        documents: list[dict[str, Any]] = json.load(fh)["documents"]
+        return documents
 
 
 def load_documents(include_malicious: bool = True) -> list[Document]:

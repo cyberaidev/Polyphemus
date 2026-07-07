@@ -22,15 +22,22 @@ the fence tokens, they are escaped before wrapping so the boundary stays intact.
 
 from __future__ import annotations
 
+import math
 import re
 import secrets
 import unicodedata
+from collections import Counter
 
 from polyphemus.models import Chunk
 
 # Zero-width / bidi characters commonly used to smuggle hidden instructions.
 _ZERO_WIDTH = "​‌‍⁠﻿‪‫‬‭‮"
 _ZERO_WIDTH_RE = re.compile(f"[{_ZERO_WIDTH}]")
+
+# Visible marker used to break any forged fence token inside untrusted content.
+# It deliberately does NOT contain the "<<" sequence, so replacing "<<CONTEXT"
+# with f"{_FENCE_ESCAPE}CONTEXT" cannot re-form a real fence token.
+_FENCE_ESCAPE = "[escaped-fence]"
 
 _RULES: list[tuple[str, re.Pattern[str]]] = [
     (
@@ -50,8 +57,48 @@ _RULES: list[tuple[str, re.Pattern[str]]] = [
     ("exfiltration", re.compile(r"\bemail\s+(them|it|the\s+\w+)\s+to\b", re.I)),
     ("data_listing", re.compile(r"list\s+all\s+documents", re.I)),
     ("system_role_injection", re.compile(r"^\s*system\s*:", re.I | re.M)),
-    ("encoded_payload", re.compile(r"\b[A-Za-z0-9+/]{40,}={0,2}\b")),  # long base64-ish blob
 ]
+
+# Candidate long token that *could* be a base64 payload. Matched broadly, then
+# validated by ``_looks_like_base64`` so hex nonces, s3 URIs, and low-entropy runs
+# do not false-positive.
+_ENCODED_CANDIDATE_RE = re.compile(r"[A-Za-z0-9+/]{40,}={0,2}")
+_HEX_RE = re.compile(r"\A[0-9a-fA-F]+\Z")
+
+
+def _shannon_entropy(s: str) -> float:
+    """Shannon entropy (bits/char) of ``s``; higher = more random-looking."""
+    if not s:
+        return 0.0
+    counts = Counter(s)
+    n = len(s)
+    return -sum((c / n) * math.log2(c / n) for c in counts.values())
+
+
+def _looks_like_base64(token: str) -> bool:
+    """True if ``token`` has genuine base64 structure and high entropy.
+
+    Excludes hex-only nonces and requires real base64 shape (length a multiple of
+    4 once padding is considered) plus mixed character classes and high entropy,
+    so ordinary long identifiers / hex digests do not trip the rule.
+    """
+    if _HEX_RE.match(token):
+        return False  # a hex digest/nonce is not a base64 payload
+    if len(token) % 4 != 0:
+        return False  # real base64 is padded to a multiple of 4
+    stripped = token.rstrip("=")
+    has_lower = any(c.islower() for c in stripped)
+    has_upper = any(c.isupper() for c in stripped)
+    has_digit = any(c.isdigit() for c in stripped)
+    # Require at least two character classes (rules out all-one-case runs).
+    if (has_lower + has_upper + has_digit) < 2:
+        return False
+    return _shannon_entropy(stripped) >= 3.5
+
+
+def _has_encoded_payload(text: str) -> bool:
+    """True if ``text`` contains a token that genuinely looks base64-encoded."""
+    return any(_looks_like_base64(m.group(0)) for m in _ENCODED_CANDIDATE_RE.finditer(text))
 
 
 def scan_text(text: str) -> list[str]:
@@ -62,6 +109,8 @@ def scan_text(text: str) -> list[str]:
     for name, pattern in _RULES:
         if pattern.search(text):
             fired.add(name)
+    if _has_encoded_payload(text):
+        fired.add("encoded_payload")
     return sorted(fired)
 
 
@@ -77,7 +126,12 @@ def neutralize(text: str) -> str:
     """Defang detected control sequences so they cannot read as instructions.
 
     - Remove zero-width / bidi characters.
-    - Normalize unicode (collapse look-alike homoglyph tricks).
+    - Apply Unicode NFKC normalization. NFKC folds *compatibility* characters
+      (e.g. ligatures, full-width forms, some styled letters) to canonical forms.
+      It does **not** map cross-script confusables/homoglyphs (e.g. Cyrillic „і"
+      → Latin „i"); a homoglyph payload can still slip past the heuristic scanner.
+      This is best-effort defense-in-depth, not a complete anti-evasion measure —
+      see docs/THREAT_MODEL.md.
     - Prefix known override/role/exfiltration phrases with a visible marker so
       they are inert text rather than imperative commands.
     """
@@ -104,9 +158,13 @@ def spotlight_context(chunks: list[Chunk], nonce: str, neutralized: bool = True)
     body_parts: list[str] = []
     for chunk in chunks:
         text = neutralize(chunk.text) if neutralized else chunk.text
-        # Escape any attempt to forge the fence tokens.
-        text = text.replace("<<CONTEXT", "<​<CONTEXT").replace("<<END_CONTEXT", "<​<END_CONTEXT")
-        # (then strip zero-width we just used purely for escaping in display)
+        # Defeat delimiter-escape attacks: any attempt to forge a fence token in
+        # the body is broken with a VISIBLE sentinel so the real fence stays the
+        # only intact open/close pair. A visible marker (not a zero-width char) is
+        # used so the escaping is human-auditable in logs and never invisible.
+        text = text.replace("<<CONTEXT", f"{_FENCE_ESCAPE}CONTEXT").replace(
+            "<<END_CONTEXT", f"{_FENCE_ESCAPE}END_CONTEXT"
+        )
         body_parts.append(f"[source_uri={chunk.source_uri}]\n{text}")
     body = "\n\n---\n\n".join(body_parts)
     return f"{open_tag}\n{body}\n{close_tag}"

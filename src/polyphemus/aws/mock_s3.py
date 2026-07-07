@@ -7,6 +7,7 @@ metadata. Keys are ``s3://bucket/key`` style but stored flat per bucket.
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 
 
@@ -34,7 +35,10 @@ class MockS3:
     ) -> dict[str, str]:
         body = Body.encode("utf-8") if isinstance(Body, str) else Body
         self._bucket(Bucket)[Key] = _S3Object(body=body, metadata=dict(Metadata or {}))
-        return {"ETag": f'"{abs(hash((Bucket, Key, len(body)))):x}"'}
+        # Deterministic ETag over the actual object bytes (like S3's content MD5).
+        # hashlib is used instead of the builtin hash(), which is salted per-process.
+        etag = hashlib.sha256(body).hexdigest()
+        return {"ETag": f'"{etag}"'}
 
     def get_object(self, Bucket: str, Key: str) -> dict[str, object]:  # noqa: N803
         obj = self._bucket(Bucket)[Key]

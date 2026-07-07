@@ -13,8 +13,9 @@ def test_scenario_1_finance_user_gets_finance_docs_with_pii_redacted(pipeline, u
     assert any("finance/" in u for u in rec.retrieved_sources)
     assert not any("hr/" in u for u in rec.retrieved_sources)
     pii = {e.entity_type for e in rec.redactions}
-    assert "US_SSN" in pii
-    assert len(pii) >= 3
+    # vendor_payments.md carries exactly these five structured PII types; pin them
+    # rather than a loose count so a detector regression is caught precisely.
+    assert {"US_SSN", "EMAIL", "PHONE", "IBAN", "CREDIT_CARD"} <= pii
 
 
 def test_scenario_2_hr_user_denied_finance_docs(pipeline, users):
@@ -26,8 +27,16 @@ def test_scenario_2_hr_user_denied_finance_docs(pipeline, users):
 
 def test_scenario_3_injection_detected_and_neutralized(pipeline, users):
     rec = pipeline.answer(users["finance_user"], INVOICE_QUERY)
-    assert "override_instruction" in rec.injection_flags
-    assert "exfiltration" in rec.injection_flags
+    # All six scanner rules the payload trips are flagged (matches README/DEMO).
+    for flag in (
+        "data_listing",
+        "exfiltration",
+        "override_instruction",
+        "prompt_exfiltration",
+        "role_hijack",
+        "system_role_injection",
+    ):
+        assert flag in rec.injection_flags, flag
     assert SYSTEM_PROMPT_SECRET_MARKER not in rec.response
     assert "attacker@evil.example" not in rec.response
     assert not any("hr/" in u for u in rec.retrieved_sources)

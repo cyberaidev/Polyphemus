@@ -38,6 +38,8 @@ def _extract_claims(event: dict[str, Any]) -> dict[str, Any]:
     jwt = authorizer.get("jwt", {})
     claims = jwt.get("claims")
     if claims:
+        # Copy before normalizing so the caller's / fixture's dict is never mutated.
+        claims = dict(claims)
         # Some group claims arrive as JSON-encoded strings; normalize.
         if isinstance(claims.get("cognito:groups"), str) and claims["cognito:groups"].startswith(
             "["

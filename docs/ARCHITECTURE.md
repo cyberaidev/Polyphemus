@@ -29,6 +29,15 @@ indirect prompt-injection defense, and a complete audit trail.
 Every AWS dependency is obtained through `src/polyphemus/aws/clients.py`. Pipeline
 code never imports `boto3`; the `POLYPHEMUS_MODE` env var selects mock vs real.
 
+> **Mock-mode caveat.** In mock mode the model's *refusal to follow injected
+> instructions* is simulated deterministically (see `MockBedrock` — an
+> `if`-statement keyed off the defense sentinel). The scanner, neutralization,
+> spotlighting, PII redaction, and output validation are real code exercised
+> offline; the model's resistance is not. In production, resistance comes from
+> prompt hardening + Bedrock Guardrails (`aws` mode). See
+> [README → Limitations of mock mode](../README.md#limitations-of-mock-mode) and
+> [`THREAT_MODEL.md`](THREAT_MODEL.md).
+
 ---
 
 ## 2. Data flow (numbered)
@@ -47,19 +56,22 @@ code never imports `boto3`; the `POLYPHEMUS_MODE` env var selects mock vs real.
 6. **Post-retrieval re-check** — every returned chunk is re-evaluated by
    `authz/policy.py`; anything not allowed is dropped and recorded in
    `denied_sources` (defense-in-depth).
-7. **PII redaction** — `redaction/redactor.py` scrubs PII from the retrieved
-   context **and** the user prompt, emitting `RedactionEvent`s.
-8. **Injection scan + neutralize** — `defense/injection.py` scans the untrusted
+7. **Injection scan + neutralize** — `defense/injection.py` scans the untrusted
    context for override/role-switch/exfiltration/encoded payloads, records the
-   fired rules, and neutralizes control sequences.
+   fired rules, and neutralizes control sequences (spotlighting the context).
+8. **PII redaction** — `redaction/redactor.py` scrubs PII from the retrieved
+   (now-neutralized) context **and** the user prompt, emitting `RedactionEvent`s.
 9. **Prompt assembly** — `defense/system_prompt.py` builds a hardened system
    prompt that declares the (spotlighted, nonce-fenced) context to be untrusted
    data, not instructions.
 10. **Bedrock** — `generation/bedrock_client.py` invokes the model to produce a
     grounded answer; the model refuses instructions embedded in context.
-11. **Audit write** — `audit/logger.py` appends one JSONL `AuditRecord` with the
+11. **Output validation** — the response is re-scanned by `redaction/redactor.py`
+    and checked for the system-prompt canary before it leaves the pipeline; any
+    late leak is scrubbed and flagged (defense-in-depth on the output side).
+12. **Audit write** — `audit/logger.py` appends one JSONL `AuditRecord` with the
     full security story.
-12. **Response** returns to the caller.
+13. **Response** returns to the caller.
 
 <a name="data-flow-mermaid"></a>
 
@@ -77,8 +89,8 @@ flowchart TB
             filter["2. build authz filter (RBAC+ABAC)"]
             query["3. vector query (FILTERED)"]
             recheck["4. post-retrieval re-check"]
-            redact["5. PII redaction (context + prompt)"]
-            defend["6. injection scan + neutralize"]
+            defend["5. injection scan + neutralize"]
+            redact["6. PII redaction (context + prompt)"]
             assemble["7. hardened prompt assembly"]
         end
         s3["S3 documents\nSSE-KMS, TLS-only"]
@@ -93,9 +105,10 @@ flowchart TB
     apigw -->|validated claims| identity
     identity --> filter --> query
     os -.ingest.-> query
-    query -->|filtered chunks| recheck --> redact
+    query -->|filtered chunks| recheck --> defend
+    defend --> redact
     redact --> comp
-    comp --> defend --> assemble
+    comp --> assemble
     assemble -->|invoke| bedrock
     bedrock -->|grounded answer| assemble
     assemble --> audit
@@ -123,6 +136,10 @@ flowchart TB
 The untrusted-content boundary is the subtle one: even *authorized* documents may
 contain adversarial instructions (see `data/documents/malicious/`). Content that
 crosses this boundary is always treated as data, never as commands.
+
+For the assets, adversaries, in/out-of-scope boundaries, and known residual risks
+(including the mock-mode and homoglyph caveats), see
+[`THREAT_MODEL.md`](THREAT_MODEL.md).
 
 ---
 

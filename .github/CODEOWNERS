@@ -1,0 +1,22 @@
+# Code owners for Polyphemus.
+#
+# @cyberaidev is the sole maintainer (see CONTRIBUTORS.md) and is requested for
+# review on every path. More specific rules could be added per-area later.
+
+# Default owner for everything in the repo.
+*                       @cyberaidev
+
+# Security-critical areas (called out explicitly for clarity).
+/src/polyphemus/authz/      @cyberaidev
+/src/polyphemus/defense/    @cyberaidev
+/src/polyphemus/redaction/  @cyberaidev
+/src/polyphemus/audit/      @cyberaidev
+/src/polyphemus/pipeline.py @cyberaidev
+
+# Infrastructure references.
+/iac/                   @cyberaidev
+
+# Docs and security policy.
+/docs/                  @cyberaidev
+/SECURITY.md            @cyberaidev
+/CONTRIBUTING.md        @cyberaidev

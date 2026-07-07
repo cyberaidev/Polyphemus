@@ -99,12 +99,12 @@ class _RealBedrock:
         payload = json.loads(resp["body"].read())
         return payload["embedding"]
 
-    def invoke(self, system: str, messages: list[dict[str, str]]) -> str:
+    def invoke(self, system: str, messages: list[dict[str, str]]) -> tuple[str, int, int]:
         import json
 
         body = {
             "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 1024,
+            "max_tokens": self._settings.max_output_tokens,
             "system": system,
             "messages": [{"role": m["role"], "content": m["content"]} for m in messages],
         }
@@ -113,7 +113,12 @@ class _RealBedrock:
             body=json.dumps(body),
         )
         payload = json.loads(resp["body"].read())
-        return payload["content"][0]["text"]
+        text = payload["content"][0]["text"]
+        # Bedrock returns exact token usage in the response metadata.
+        usage = payload.get("usage", {})
+        input_tokens = int(usage.get("input_tokens", 0))
+        output_tokens = int(usage.get("output_tokens", 0))
+        return text, input_tokens, output_tokens
 
 
 class _RealOpenSearchStore:

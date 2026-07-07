@@ -12,8 +12,10 @@ from polyphemus.aws.clients import get_bedrock
 from polyphemus.config import get_settings
 
 
-def generate(system_prompt: str, question: str, spotlighted_context: str) -> tuple[str, str]:
-    """Return ``(answer, model_id)`` grounded in the supplied context."""
+def generate(
+    system_prompt: str, question: str, spotlighted_context: str
+) -> tuple[str, str, int, int]:
+    """Return ``(answer, model_id, input_tokens, output_tokens)`` grounded in context."""
     settings = get_settings()
     bedrock = get_bedrock(settings)
 
@@ -24,5 +26,5 @@ def generate(system_prompt: str, question: str, spotlighted_context: str) -> tup
         f"{spotlighted_context}"
     )
     messages = [{"role": "user", "content": user_message}]
-    answer = bedrock.invoke(system_prompt, messages)
-    return answer, settings.bedrock_text_model_id
+    answer, input_tokens, output_tokens = bedrock.invoke(system_prompt, messages)
+    return answer, settings.bedrock_text_model_id, input_tokens, output_tokens

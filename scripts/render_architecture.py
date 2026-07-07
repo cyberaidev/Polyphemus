@@ -42,7 +42,16 @@ CONTROL_LEGEND = [
 ]
 
 
-def _box(x, y, w, h, fill, title, subtitle="", rx=10):
+def _box(
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    fill: str,
+    title: str,
+    subtitle: str = "",
+    rx: int = 10,
+) -> str:
     parts = [
         f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{rx}" ry="{rx}" '
         f'fill="{fill}" stroke="{COL_EDGE}" stroke-width="1.5"/>',
@@ -59,7 +68,7 @@ def _box(x, y, w, h, fill, title, subtitle="", rx=10):
     return "\n".join(parts)
 
 
-def _arrow(x1, y1, x2, y2, label="", dash=False):
+def _arrow(x1: float, y1: float, x2: float, y2: float, label: str = "", dash: bool = False) -> str:
     style = f'stroke="{COL_EDGE}" stroke-width="1.6"'
     if dash:
         style += ' stroke-dasharray="5,4"'
@@ -118,8 +127,8 @@ def build_svg() -> str:
         ("2. build authz filter (RBAC+ABAC)", COL_COMPUTE),
         ("3. vector query (FILTERED)", COL_COMPUTE),
         ("4. post-retrieval re-check", COL_COMPUTE),
-        ("5. PII redaction (ctx + prompt)", COL_COMPUTE),
-        ("6. injection scan + neutralize", COL_COMPUTE),
+        ("5. injection scan + neutralize", COL_COMPUTE),
+        ("6. PII redaction (ctx + prompt)", COL_COMPUTE),
         ("7. hardened prompt assembly", COL_COMPUTE),
     ]
     y = 165

@@ -17,8 +17,11 @@ from stacks.vector_stack import VectorStack
 
 app = cdk.App()
 prefix = app.node.try_get_context("name_prefix") or "polyphemus"
+log_retention_days = int(app.node.try_get_context("log_retention_days") or 365)
 
-storage = StorageStack(app, f"{prefix}-storage", name_prefix=prefix)
+storage = StorageStack(
+    app, f"{prefix}-storage", name_prefix=prefix, log_retention_days=log_retention_days
+)
 vector = VectorStack(app, f"{prefix}-vector", name_prefix=prefix)
 identity = IdentityStack(app, f"{prefix}-identity", name_prefix=prefix)
 ApiStack(

@@ -73,8 +73,22 @@ class MockBedrock:
         return vec
 
     # -- chat generation -----------------------------------------------------
-    def invoke(self, system: str, messages: list[dict[str, str]]) -> str:
-        """Generate a grounded answer from the last user message's CONTEXT block."""
+    def invoke(self, system: str, messages: list[dict[str, str]]) -> tuple[str, int, int]:
+        """Generate a grounded answer plus an approximate token usage.
+
+        Returns ``(answer, input_tokens, output_tokens)``. Token counts are a
+        deterministic word-count approximation of the input (system + messages)
+        and the output — enough to exercise the audit fields offline. A real
+        Bedrock client reads exact counts from the response metadata.
+        """
+        answer = self._answer(system, messages)
+        input_tokens = _approx_tokens(system) + sum(
+            _approx_tokens(m.get("content", "")) for m in messages
+        )
+        output_tokens = _approx_tokens(answer)
+        return answer, input_tokens, output_tokens
+
+    def _answer(self, system: str, messages: list[dict[str, str]]) -> str:
         defenses_on = DEFENSE_SENTINEL_OFF not in system  # default to safe (on)
         user_text = _last_user_text(messages)
         question = _extract_question(user_text)
@@ -95,6 +109,11 @@ class MockBedrock:
 
 
 # --- helpers ----------------------------------------------------------------
+def _approx_tokens(text: str) -> int:
+    """Deterministic, dependency-free token approximation (whitespace words)."""
+    return len(text.split())
+
+
 def _tokenize(text: str) -> list[str]:
     return re.findall(r"[a-z0-9]+", text.lower())
 

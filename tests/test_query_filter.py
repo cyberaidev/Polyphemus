@@ -62,3 +62,22 @@ def test_internal_chunk_visible_to_all_listed_groups():
         f = build_filter(user)
         internal = _chunk("internal", ["finance", "hr", "staff", "admin"], "general")
         assert _matches_filter(internal, f) is True
+
+
+def test_unknown_classification_fails_closed_in_filter():
+    """A chunk whose classification is outside the known set must be EXCLUDED by
+    the query-time filter for a normal user (fail-closed, not fail-open)."""
+    user = from_fixture("finance_user")
+    f = build_filter(user)
+    # model_construct bypasses the Literal validation to simulate a corrupt/
+    # unexpected classification value reaching the store.
+    corrupt = Chunk.model_construct(
+        chunk_id="c",
+        doc_id="d",
+        text="t",
+        department="finance",
+        classification="top_secret",  # not in Classification
+        allowed_groups=["finance"],
+        source_uri="file://finance/corrupt.md",
+    )
+    assert _matches_filter(corrupt, f) is False

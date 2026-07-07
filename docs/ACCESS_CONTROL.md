@@ -26,6 +26,14 @@ each other's departments.
 public = 0, internal = 1, hr_confidential = 2, finance_confidential = 2
 ```
 
+`classification_rank` is **not a stored field** — it is a derived numeric
+projection of `classification`, computed on demand from `CLASSIFICATION_RANK` both
+in the query filter (`authz/query_filter.py`) and in the vector store's synthetic
+field resolver (`mock_vector_store._chunk_field`). A classification outside the
+known set projects to `UNKNOWN_CLASSIFICATION_RANK` (99), which is higher than any
+real tier, so a corrupt/unexpected value **fails closed** in both the filter and
+`policy.evaluate` — it is never treated as public.
+
 ## Claim → attribute mapping
 
 | IdP claim (Cognito / Entra) | `UserContext` field | Used by |
