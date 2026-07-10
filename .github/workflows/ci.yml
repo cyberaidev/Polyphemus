@@ -110,7 +110,7 @@ jobs:
           cache-dependency-path: iac/cdk/requirements.txt
 
       - name: Set up Node (for the AWS CDK CLI)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
 
