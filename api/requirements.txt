@@ -1,5 +1,5 @@
 # Lambda runtime dependencies (subset of the root requirements).
 # boto3 is provided by the Lambda runtime, so it is not vendored here.
 pydantic>=2.5,<3
-pydantic-settings>=2.1,<3
+pydantic-settings>=2.14.2,<3
 # The `polyphemus` package itself is deployed as the function code / a layer.
